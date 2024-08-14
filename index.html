@@ -109,6 +109,11 @@
                 <input type="range" id="Fov" min="-100" max="160" value="60" step="0.1">
                 <span id="FovValue">60</span>
             </div>
+            <div class="slider-container">
+                <label for="bias">bias</label>
+                <input type="range" id="bias" min="-0.1" max="0.1" value="-0.001" step="0.001">
+                <span id="biasValue">-0.001</span>
+            </div>  
         </div>
     </div>
 
@@ -116,6 +121,8 @@
     <script src="https://webgl2fundamentals.org/webgl/resources/webgl-lessons-ui.js"></script>
     <script src="https://webgl2fundamentals.org/webgl/resources/twgl-full.min.js"></script>
     <script src="m4.js"></script>
+    <script src="parseOBJ.js"></script>
+    <script src="parseMTL.js"></script>   
     <script src="app.js"></script>
 
     <script>

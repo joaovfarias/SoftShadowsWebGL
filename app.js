@@ -14,84 +14,94 @@ const vs = `#version 300 es
 in vec4 a_position;
 in vec2 a_texcoord;
 in vec3 a_normal;
+in vec4 a_color;
 
 uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform mat4 u_world;
 uniform mat4 u_textureMatrix;
+uniform vec3 u_viewWorldPosition;
 
 out vec2 v_texcoord;
 out vec4 v_projectedTexcoord;
 out vec3 v_normal;
+out vec3 v_surfaceToView;
+out vec4 v_color;
 
 void main() {
-  // Multiply the position by the matrix.
   vec4 worldPosition = u_world * a_position;
-
   gl_Position = u_projection * u_view * worldPosition;
 
-  // Pass the texture coord to the fragment shader.
   v_texcoord = a_texcoord;
-
   v_projectedTexcoord = u_textureMatrix * worldPosition;
-
-  // orient the normals and pass to the fragment shader
   v_normal = mat3(u_world) * a_normal;
+  v_surfaceToView = u_viewWorldPosition - worldPosition.xyz;
+  v_color = a_color;
 }
 `;
+
+
 
 const fs = `#version 300 es
 precision highp float;
 
-// Passed in from the vertex shader.
 in vec2 v_texcoord;
 in vec4 v_projectedTexcoord;
 in vec3 v_normal;
+in vec3 v_surfaceToView;
+in vec4 v_color;
 
 uniform vec4 u_colorMult;
 uniform sampler2D u_texture;
 uniform sampler2D u_projectedTexture;
+uniform sampler2D specularMap;
 uniform float u_bias;
 uniform vec3 u_reverseLightDirection;
+uniform vec3 diffuse;
+uniform vec3 ambient;
+uniform vec3 emissive;
+uniform vec3 specular;
+uniform float shininess;
+uniform float opacity;
+uniform vec3 u_lightDirection;
+uniform vec3 u_ambientLight;
+
+// PCF kernel parameters
+const float kernelSize = 12.0;
+const float kernelHalfSize = (kernelSize - 1.0) * 0.5;
+const float texelSize = 1.0 / 256.0;
+const float shadowIntensity = 0.9;
+const float ambientLight = 0.2;
 
 out vec4 outColor;
 
-// Define the size of the PCF kernel (e.g., 3x3)
-const float kernelSize = 12.0;
-const float kernelHalfSize = (kernelSize - 1.0) * 0.5;
-
-// Adjust this to control the size of the shadow's softness
-const float texelSize = 1.0 / 256.0; 
-
-// Shadow intensity factor (0 = no shadow, 1 = full shadow)
-const float shadowIntensity = 0.9;
-
-// Ambient light factor
-const float ambientLight = 0.2;
-
 void main() {
-  // Normalize the interpolated normal vector
   vec3 normal = normalize(v_normal);
+  vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+  vec3 halfVector = normalize(u_lightDirection + surfaceToViewDirection);
 
-  // Calculate the amount of light based on the angle between the light direction and the surface normal
   float light = dot(normal, u_reverseLightDirection);
+  float fakeLight = dot(u_lightDirection, normal) * 0.5 + 0.5;
+  float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
+  vec4 specularMapColor = texture(specularMap, v_texcoord);
+  vec3 effectiveSpecular = specular * specularMapColor.rgb;
 
-  // Calculate the projected texture coordinates
+  vec4 diffuseMapColor = texture(u_texture, v_texcoord);
+  vec3 effectiveDiffuse = diffuse * diffuseMapColor.rgb * v_color.rgb;
+  float effectiveOpacity = opacity * diffuseMapColor.a * v_color.a;
+
+  // Calculate the projected texture coordinates for shadow mapping
   vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
   float currentDepth = projectedTexcoord.z + u_bias;
 
-  // Check if the projected coordinates are in range
   bool inRange =
       projectedTexcoord.x >= 0.0 &&
       projectedTexcoord.x <= 1.0 &&
       projectedTexcoord.y >= 0.0 &&
       projectedTexcoord.y <= 1.0;
 
-  // Initialize shadowLight for PCF
   float shadowLight = 1.0;
-
   if (inRange) {
-    // Perform PCF by averaging depth comparisons in a 3x3 kernel
     float shadowSamples = 0.0;
     for (float x = -kernelHalfSize; x <= kernelHalfSize; x += 1.0) {
       for (float y = -kernelHalfSize; y <= kernelHalfSize; y += 1.0) {
@@ -100,22 +110,21 @@ void main() {
         shadowSamples += (sampledDepth <= currentDepth) ? 0.0 : 1.0;
       }
     }
-    shadowLight = shadowSamples / (kernelSize * kernelSize); // Average the results
+    shadowLight = shadowSamples / (kernelSize * kernelSize);
   }
 
-  // Blend shadow with ambient and intensity
   float shadowFactor = mix(1.0, shadowLight, shadowIntensity) + ambientLight;
-
-  // Ensure shadowFactor is clamped to 1.0
   shadowFactor = clamp(shadowFactor, 0.0, 1.0);
 
-  // Fetch the texture color and apply the lighting
-  vec4 texColor = texture(u_texture, v_texcoord) * u_colorMult;
-  outColor = vec4(
-      texColor.rgb * light * shadowFactor,
-      texColor.a);
+  vec3 finalLight = emissive +
+                    ambient * u_ambientLight +
+                    effectiveDiffuse * fakeLight * shadowFactor +
+                    effectiveSpecular * pow(specularLight, shininess);
+
+  outColor = vec4(finalLight, effectiveOpacity);
 }
 `;
+
 
 const colorVS = `#version 300 es
 in vec4 a_position;
@@ -142,7 +151,7 @@ void main() {
 }
 `;
 
-function main() {
+async function main() {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
   const canvas = document.querySelector('#canvas');
@@ -174,14 +183,6 @@ function main() {
   // normal with a_normal etc..
   twgl.setAttributePrefix("a_");
 
-  const sphereBufferInfo = twgl.primitives.createSphereBufferInfo(
-    gl,
-    2,  // radius
-    32, // subdivisions around
-    24, // subdivisions down
-);
-  const sphereVAO = twgl.createVAOFromBufferInfo(
-    gl, textureProgramInfo, sphereBufferInfo);
 
   const planeBufferInfo = twgl.primitives.createPlaneBufferInfo(
       gl,
@@ -255,21 +256,97 @@ function main() {
     return d * Math.PI / 180;
   }
 
+  function loadTexture(objectMaterial, source, textures, gl) {
+    for (const material of Object.values(objectMaterial)) {
+      Object.entries(material)
+        .filter(([key]) => key.endsWith('Map'))
+        .forEach(([key, filename]) => {
+          let texture = textures[filename];
+          if (!texture) {
+            texture = twgl.createTexture(gl, {src: source, flipY: true});
+            textures[filename] = texture;
+          }
+          material[key] = texture;
+        });
+    }
+  }
+
+  async function loadFile(file) {
+    const response = await fetch(file);
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.text();
+  }
+
+  function createParts(gl, programInfo, obj, materials) {
+    return obj.geometries.map(({material, data}) => {
+      if (data.color) {
+        if (data.position.length === data.color.length) {
+          data.color = {numComponents: 3, data: data.color};
+        }
+      } else {
+        data.color = {value: [1, 1, 1, 1]};
+      }
+  
+      const bufferInfo = twgl.createBufferInfoFromArrays(gl, data);
+      const vao = twgl.createVAOFromBufferInfo(gl, programInfo, bufferInfo);
+  
+      return {
+        material: {...defaultMaterial, ...materials[material]},
+        bufferInfo,
+        vao,
+      };
+    });
+  }
+
+  const textures = {
+    defaultWhite: twgl.createTexture(gl, {src: [255, 255, 255, 255]}),
+    defaultGreen: twgl.createTexture(gl, {src: [3, 46, 15, 255]})
+  };
+
+  const defaultMaterial = {
+    diffuse: [1, 1, 1],
+    diffuseMap: textures.defaultGreen,
+    ambient: [0, 0, 0],
+    specular: [1, 1, 1],
+    specularMap: textures.defaultGreen,
+    shininess: 400,
+    opacity: 1,
+  };
+
+
+  const testFileName = 'assets/Shop-0-ShopBuilding_1.obj'
+  const mtlFileName = 'assets/Shop-0-ShopBuilding_1.mtl'
+  const texFileName = 'assets/Shop-0-ShopBuilding_1.png'
+
+  const [testText, mtlText] = await Promise.all([
+    loadFile(testFileName),
+    loadFile(mtlFileName)
+  ]);
+  const obj = parseOBJ(testText);
+  const materials = parseMTL(mtlText);
+
+  loadTexture(materials, texFileName, textures, gl)
+
+  objParts = createParts(gl, textureProgramInfo, obj, materials);
+
+
   const settings = {
-    cameraX: 6,
-    cameraY: 12,
-    cameraZ: 2.5,
-    posX: 2.5,
-    posY: 10,
-    posZ: 20,
-    targetX: 3.5,
-    targetY: 0,
-    targetZ: 3.5,
-    projWidth: 10,
-    projHeight: 10,
+    cameraX: 100,
+    cameraY: 33.3,
+    cameraZ: 9.1,
+    posX: -0.1,
+    posY: 21.8,
+    posZ: 64.4,
+    targetX: -2.4,
+    targetY: -1.2,
+    targetZ: 8,
+    projWidth: 14.9,
+    projHeight: 10.3,
     perspective: true,
-    fieldOfView: 60,
-    bias: -0.0010,
+    fieldOfView: 31.4,
+    bias: -0.001,
   };
 
   const fieldOfViewRadians = degToRad(60);
@@ -281,12 +358,7 @@ function main() {
     u_texture: twgl.createTexture(gl, {src: [255, 255, 255, 255]}),
     u_world: m4.translation(0, 0, 0)
   };
-  const sphereUniforms = {
-    u_colorMult: [1, 0, 1, 1],  
-    u_color: [0, 0, 1, 1],
-    u_texture: twgl.createTexture(gl, {src: [255, 255, 255, 255]}),
-    u_world: m4.translation(0, 2, 10),
-    };
+
 
   function drawScene(
       projectionMatrix,
@@ -311,16 +383,16 @@ function main() {
       u_reverseLightDirection: lightWorldMatrix.slice(8, 11),
     });
 
-    // ------ Draw the sphere --------
+    gl.bindVertexArray(objParts[0].vao);
 
-    // Setup all the needed attributes.
-    gl.bindVertexArray(sphereVAO);
+    twgl.setUniforms(programInfo, {
+      u_world: m4.translation(0, 10, 0),
+      u_colorMult: [1, 1, 1, 1],
+      u_color: [1, 1, 1, 1],
+      u_texture: objParts[0].material.diffuseMap,
+    });
 
-    // Set the uniforms unique to the sphere
-    twgl.setUniforms(programInfo, sphereUniforms);
-
-    // calls gl.drawArrays or gl.drawElements
-    twgl.drawBufferInfo(gl, sphereBufferInfo);
+    twgl.drawBufferInfo(gl, objParts[0].bufferInfo);
 
     // ------ Draw the plane --------
 
@@ -447,6 +519,7 @@ function main() {
     settings.projWidth = parseFloat(document.getElementById("projWidth").value);
     settings.projHeight = parseFloat(document.getElementById("projHeight").value);
     settings.fieldOfView = parseFloat(document.getElementById("Fov").value);
+    settings.bias = parseFloat(document.getElementById("bias").value);
 
     requestAnimationFrame(render);
   }

@@ -21,7 +21,7 @@
             position: absolute;
             bottom: 10px; /* Distance from the bottom of the canvas */
             right: 10px; /* Distance from the right of the canvas */
-            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+            background-color: rgba(255, 255, 255, 0.0); /* Transparent background */
             padding: 10px;
             border-radius: 8px;
             display: flex; /* Use flexbox for layout */
@@ -51,7 +51,7 @@
         }
 
         /* Button styling */
-        #changeSceneButton {
+        button {
             margin-right: 20px; /* Add space between the button and sliders */
             padding: 10px 15px;
             background-color: #007BFF; /* Button color */
@@ -63,7 +63,7 @@
             margin-left: 10px; /* Add space between sliders and button */
         }
 
-        #changeSceneButton:hover {
+        button:hover {
             background-color: #0056b3; /* Darker color on hover */
         }
     </style>
@@ -73,74 +73,9 @@
         <canvas id="canvas"></canvas>
 
         <div id="controls">
-            <!-- <div id="sliders">
-                <div class="slider-container">
-                    <label for="cameraX">cameraX:</label>
-                    <input type="range" id="cameraX" min="-100" max="100" value="12" step="0.1">
-                    <span id="cameraXValue">12</span>
-                </div>
-                <div class="slider-container">
-                    <label for="cameraY">cameraY:</label>
-                    <input type="range" id="cameraY" min="-100" max="100" value="16.3" step="0.1">
-                    <span id="cameraYValue">16.3</span>
-                </div>
-                <div class="slider-container">
-                    <label for="cameraZ">cameraZ:</label>
-                    <input type="range" id="cameraZ" min="-100" max="100" value="-60" step="0.1">
-                    <span id="cameraZValue">-60</span>
-                </div>
-                <div class="slider-container">
-                    <label for="posX">posX:</label>
-                    <input type="range" id="posX" min="-100" max="100" value="12" step="0.1">
-                    <span id="posXValue">12</span>
-                </div>
-                <div class="slider-container">
-                    <label for="posY">posY:</label>
-                    <input type="range" id="posY" min="-100" max="100" value="100" step="0.1">
-                    <span id="posYValue">100</span>
-                </div>
-                <div class="slider-container">
-                    <label for="posZ">posZ:</label>
-                    <input type="range" id="posZ" min="-100" max="100" value="-100" step="0.1">
-                    <span id="posZValue">-100</span>
-                </div>
-                <div class="slider-container">
-                    <label for="targetX">targetX:</label>
-                    <input type="range" id="targetX" min="-100" max="100" value="3.5" step="0.1">
-                    <span id="targetXValue">3.5</span>
-                </div>
-                <div class="slider-container">
-                    <label for="targetY">targetY:</label>
-                    <input type="range" id="targetY" min="-100" max="100" value="0" step="0.1">
-                    <span id="targetYValue">0</span>
-                </div>
-                <div class="slider-container">
-                    <label for="targetZ">targetZ:</label>
-                    <input type="range" id="targetZ" min="-100" max="100" value="3.5" step="0.1">
-                    <span id="targetZValue">3.5</span>
-                </div>
-                <div class="slider-container">
-                    <label for="projWidth">projWidth:</label>
-                    <input type="range" id="projWidth" min="-100" max="100" value="14.9" step="0.1">
-                    <span id="projWidthValue">14.9</span>
-                </div>
-                <div class="slider-container">
-                    <label for="projHeight">projHeight:</label>
-                    <input type="range" id="projHeight" min="-100" max="100" value="10" step="0.1">
-                    <span id="projHeightValue">10</span>
-                </div>
-                <div class="slider-container">
-                    <label for="Fov">Fov:</label>
-                    <input type="range" id="Fov" min="-100" max="160" value="60" step="0.1">
-                    <span id="FovValue">60</span>
-                </div>
-                <div class="slider-container">
-                    <label for="bias">bias:</label>
-                    <input type="range" id="bias" min="-0.1" max="0.1" value="-0.001" step="0.0001">
-                    <span id="biasValue">-0.001</span>
-                </div> -->
-                <button id="changeSceneButton">Change Scene</button>
-            </div>
+            <button id="changeSceneButton">Change Scene</button>
+            <button id="moveLightButton">Move Light</button>
+            <button id="moveCarsButton">Move Cars</button>
         </div>
     </div>
 
@@ -152,17 +87,5 @@
     <script src="scenes.js"></script>
     <script src="shaders.js"></script>
     <script src="app.js"></script>
-
-    <script>
-        // Update span elements with current slider values
-        document.querySelectorAll('input[type="range"]').forEach(slider => {
-            slider.addEventListener('input', function() {
-                const valueSpan = document.getElementById(this.id + 'Value');
-                valueSpan.textContent = this.value;
-                // Optionally, update the rendering logic here using the new slider values
-            });
-        });
-
-    </script>
 </body>
 </html>

@@ -55,7 +55,7 @@ uniform vec3 u_reverseLightDirection;
 out vec4 outColor;
 
 const int KERNEL_SIZE = 4; 
-const float OFFSET = 1.0 / 512.0; // Offset for PCF sampling
+const float OFFSET = 1.0 / 1024.0; // Offset for PCF sampling
 
 float PCF(vec3 projectedTexcoord) {
     float shadow = 0.0;

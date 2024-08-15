@@ -50,8 +50,6 @@ async function main() {
   const colorProgramInfo = twgl.createProgramInfo(gl, [colorVS, colorFS], programOptions);
 
   twgl.setAttributePrefix("a_");
-  let time = 0; 
-  const frequency = 0.005;
 
   const cubeLinesBufferInfo = twgl.createBufferInfoFromArrays(gl, {
     position: [
@@ -85,7 +83,7 @@ async function main() {
       gl, colorProgramInfo, cubeLinesBufferInfo);
 
   const depthTexture = gl.createTexture();
-  const depthTextureSize = 512;
+  const depthTextureSize = 1024;
   gl.bindTexture(gl.TEXTURE_2D, depthTexture);
   gl.texImage2D(
       gl.TEXTURE_2D,      // target
@@ -111,10 +109,6 @@ async function main() {
       depthTexture,         // texture
       0);                   // mip level
 
-  function degToRad(d) {
-    return d * Math.PI / 180;
-  }
-
 
   const fieldOfViewRadians = degToRad(60);
 
@@ -125,6 +119,11 @@ async function main() {
   const car2Parts = await createObjectParts(gl, textureProgramInfo, 'assets/car.obj', 'assets/car.mtl', 'assets/car.png');
   const car3Parts = await createObjectParts(gl, textureProgramInfo, 'assets/car.obj', 'assets/car.mtl', 'assets/car.png');
   const cabinParts = await createObjectParts(gl, textureProgramInfo, 'assets/cabin.obj', 'assets/cabin.mtl', 'assets/cabin.png');
+
+  car2Translation = [15, 1.5, -20.7];
+  car2Rotation = [0, degToRad(-180), 0];
+  car3Translation = [-15, 1.5, -16.5];
+  car3Rotation = [0, 0, 0];
 
   function drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, programInfo) {
     const viewMatrix = m4.inverse(cameraMatrix);
@@ -141,20 +140,43 @@ async function main() {
     });
 
     drawParts(shopParts, [10, 5.15, 17 - 3.5], [1.3, 1.3, 1.3], [0, 0, 0], programInfo);
-    drawParts(groundParts, [0, 0, 0], [2.1, 1, 1.5], [0, 0, 0], programInfo);
+    drawParts(groundParts, [0, 0, 0], [2.1, 1, 1.8], [0, 0, 0], programInfo);
     drawParts(shop2Parts, [-9, 4.8, 9.5 - 3.5], [1.3, 1.3, 1.3], [0, 0, 0], programInfo);
     drawParts(carParts, [5, 1.5, 4.7 - 3.5], [1.8, 1.8, 1.8], [0, degToRad(-90), 0], programInfo);
-    drawParts(car2Parts, [15, 1.5, -14.7], [1.8, 1.8, 1.8], [0, degToRad(-180), 0], programInfo);
-    drawParts(car3Parts, [-15, 1.5, -17], [1.8, 1.8, 1.8], [0, degToRad(0), 0], programInfo);
+    drawParts(car2Parts, car2Translation, [1.8, 1.8, 1.8], car2Rotation, programInfo);
+    drawParts(car3Parts, car3Translation, [1.8, 1.8, 1.8], car3Rotation, programInfo);
     drawParts(cabinParts, [-15, 2, 0], [1, 1, 1], [0, 0, 0], programInfo);
 
+    if (moveCars) {
+      car2Translation[0] -= 0.025;
+      car3Translation[0] += 0.02;
+
+      if (car3Translation[0] > 17.6) {
+        car3Rotation[2] += degToRad(-0.2);
+        if (car3Translation[0] > 22) {
+          car3Translation[1] -= 0.03;
+        }
+      }
+
+      if (car2Translation[0] < -18) {
+        car2Rotation[2] += degToRad(-0.2);
+        if (car2Translation[0] < -22) {	
+          car2Translation[1] -= 0.03;
+        }
+      }
+    }
   }
 
-  function render() {
+  let then = 0;
+  function render(now) {
     twgl.resizeCanvasToDisplaySize(gl.canvas);
 
     gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
+
+    now *= 0.001;  // convert to seconds
+    const deltaTime = now - then;
+    then = now;
 
     // first draw from the POV of the light
     const lightWorldMatrix = m4.lookAt(
@@ -174,7 +196,7 @@ async function main() {
             -settings.projHeight / 2,  // bottom
              settings.projHeight / 2,  // top
              0.5,                      // near
-             1000);                      // far
+             200);                      // far
 
     // draw to the depth texture
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
@@ -210,53 +232,54 @@ async function main() {
 
     drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, textureProgramInfo);
 
-    // ------ Draw the frustum ------
-    {
-      const viewMatrix = m4.inverse(cameraMatrix);
+    // // ------ Draw the frustum ------
+    // {
+    //   const viewMatrix = m4.inverse(cameraMatrix);
 
-      gl.useProgram(colorProgramInfo.program);
+    //   gl.useProgram(colorProgramInfo.program);
 
-      gl.bindVertexArray(cubeLinesVAO);
+    //   gl.bindVertexArray(cubeLinesVAO);
 
-      const mat = m4.multiply(
-          lightWorldMatrix, m4.inverse(lightProjectionMatrix));
+    //   const mat = m4.multiply(
+    //       lightWorldMatrix, m4.inverse(lightProjectionMatrix));
 
-      twgl.setUniforms(colorProgramInfo, {
-        u_color: [1, 1, 1, 1],
-        u_view: viewMatrix,
-        u_projection: projectionMatrix,
-        u_world: mat,
-      });
+    //   twgl.setUniforms(colorProgramInfo, {
+    //     u_color: [1, 1, 1, 1],
+    //     u_view: viewMatrix,
+    //     u_projection: projectionMatrix,
+    //     u_world: mat,
+    //   });
 
-      twgl.drawBufferInfo(gl, cubeLinesBufferInfo, gl.LINES);
-    }
+    //   twgl.drawBufferInfo(gl, cubeLinesBufferInfo, gl.LINES);
+    // }
+    
+    if (moveLight){
+      if (currentSceneIndex == 0) {
+        const amplitude = (20 - (-40)) / 2; // Half the distance between min and max
+        const offset = (20 + (-40)) / 2;   // Midpoint of min and max
+        settings.posZ = amplitude * Math.sin(time) + offset;
+    
+        // Increment the time variable to animate the wave
+        time += frequency * deltaTime;
+      }
 
-    if (currentSceneIndex == 0) {
-      // Calculate the new posZ value based on the sine wave
-      const amplitude = (7.7 - (-40)) / 2; // Half the distance between min and max
-      const offset = (7.7 + (-40)) / 2;   // Midpoint of min and max
-      settings.posZ = amplitude * Math.sin(time) + offset;
-  
-      // Increment the time variable to animate the wave
-      time += frequency;
-    }
+      if (currentSceneIndex == 1){
+        const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
+        const offset = (30 + (-30)) / 2;   // Midpoint of min and max
+        settings.posZ = amplitude * Math.sin(time) + offset;
+    
+        // Increment the time variable to animate the wave
+        time += frequency * deltaTime;
+      }
 
-    if (currentSceneIndex == 1){
-      const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
-      const offset = (30 + (-30)) / 2;   // Midpoint of min and max
-      settings.posZ = amplitude * Math.sin(time) + offset;
-  
-      // Increment the time variable to animate the wave
-      time += frequency;
-    }
-
-    if (currentSceneIndex == 2){
-      const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
-      const offset = (30 + (-30)) / 2;   // Midpoint of min and max
-      settings.posZ = amplitude * Math.sin(time) + offset;
-  
-      // Increment the time variable to animate the wave
-      time += frequency;
+      if (currentSceneIndex == 2){
+        const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
+        const offset = (30 + (-30)) / 2;   // Midpoint of min and max
+        settings.posZ = amplitude * Math.sin(time) + offset;
+    
+        // Increment the time variable to animate the wave
+        time += frequency * deltaTime;
+      }
     }
 
     requestAnimationFrame(render);

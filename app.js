@@ -174,7 +174,7 @@ async function main() {
             -settings.projHeight / 2,  // bottom
              settings.projHeight / 2,  // top
              0.5,                      // near
-             10);                      // far
+             1000);                      // far
 
     // draw to the depth texture
     gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
@@ -210,26 +210,26 @@ async function main() {
 
     drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, textureProgramInfo);
 
-    // // ------ Draw the frustum ------
-    // {
-    //   const viewMatrix = m4.inverse(cameraMatrix);
+    // ------ Draw the frustum ------
+    {
+      const viewMatrix = m4.inverse(cameraMatrix);
 
-    //   gl.useProgram(colorProgramInfo.program);
+      gl.useProgram(colorProgramInfo.program);
 
-    //   gl.bindVertexArray(cubeLinesVAO);
+      gl.bindVertexArray(cubeLinesVAO);
 
-    //   const mat = m4.multiply(
-    //       lightWorldMatrix, m4.inverse(lightProjectionMatrix));
+      const mat = m4.multiply(
+          lightWorldMatrix, m4.inverse(lightProjectionMatrix));
 
-    //   twgl.setUniforms(colorProgramInfo, {
-    //     u_color: [1, 1, 1, 1],
-    //     u_view: viewMatrix,
-    //     u_projection: projectionMatrix,
-    //     u_world: mat,
-    //   });
+      twgl.setUniforms(colorProgramInfo, {
+        u_color: [1, 1, 1, 1],
+        u_view: viewMatrix,
+        u_projection: projectionMatrix,
+        u_world: mat,
+      });
 
-    //   twgl.drawBufferInfo(gl, cubeLinesBufferInfo, gl.LINES);
-    // }
+      twgl.drawBufferInfo(gl, cubeLinesBufferInfo, gl.LINES);
+    }
 
     if (currentSceneIndex == 0) {
       // Calculate the new posZ value based on the sine wave
@@ -242,6 +242,15 @@ async function main() {
     }
 
     if (currentSceneIndex == 1){
+      const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
+      const offset = (30 + (-30)) / 2;   // Midpoint of min and max
+      settings.posZ = amplitude * Math.sin(time) + offset;
+  
+      // Increment the time variable to animate the wave
+      time += frequency;
+    }
+
+    if (currentSceneIndex == 2){
       const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
       const offset = (30 + (-30)) / 2;   // Midpoint of min and max
       settings.posZ = amplitude * Math.sin(time) + offset;

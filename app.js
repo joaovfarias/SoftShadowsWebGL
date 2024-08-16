@@ -195,7 +195,7 @@ async function main() {
              settings.projWidth / 2,   // right
             -settings.projHeight / 2,  // bottom
              settings.projHeight / 2,  // top
-             0.5,                      // near
+             zNear,                      // near
              200);                      // far
 
     // draw to the depth texture
@@ -273,8 +273,8 @@ async function main() {
       }
 
       if (currentSceneIndex == 2){
-        const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
-        const offset = (30 + (-30)) / 2;   // Midpoint of min and max
+        const amplitude = (15 - (-8)) / 2; // Half the distance between min and max
+        const offset = (15 + (-8)) / 2;   // Midpoint of min and max
         settings.posZ = amplitude * Math.sin(time) + offset;
     
         // Increment the time variable to animate the wave

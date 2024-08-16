@@ -3,6 +3,7 @@ let time = 0;
 const frequency = 0.5;
 let moveLight = false;
 let moveCars = false;
+let zNear = 0.1;
 
 const settings = {
     cameraX: -41.3, cameraY: 24.9, cameraZ: -36.9,
@@ -36,6 +37,10 @@ document.getElementById('moveCarsButton').addEventListener('click', () => {
     moveCars = !moveCars;
 });
 
+document.getElementById('toggleShadowsButton').addEventListener('click', () => {
+    zNear = zNear === 0.1 ? 100 : 0.1;
+});
+
 const scenes = [
     {
         cameraX: -41.3, cameraY: 24.9, cameraZ: -36.9,
@@ -53,9 +58,9 @@ const scenes = [
     },
     {
         cameraX: 42.5, cameraY: 12.3, cameraZ: -0.7,
-        posX: -7.9, posY: 28.1, posZ: 0,
+        posX: -7.9, posY: 28.1, posZ: 3.5,
         targetX: 3.5, targetY: 0, targetZ: 3.5,
         projWidth: 85, projHeight: 70, perspective: false,
-        fieldOfView: 92.7, bias: -0.01
+        fieldOfView: 92.7, bias: -0.0009
     }
 ];

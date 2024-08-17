@@ -125,7 +125,7 @@ async function main() {
   car3Translation = [-15, 1.5, -16.5];
   car3Rotation = [0, 0, 0];
 
-  function drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, programInfo) {
+  function drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, programInfo, deltaTime) {
     const viewMatrix = m4.inverse(cameraMatrix);
 
     gl.useProgram(programInfo.program);
@@ -148,20 +148,20 @@ async function main() {
     drawParts(cabinParts, [-15, 2, 0], [1, 1, 1], [0, 0, 0], programInfo);
 
     if (moveCars) {
-      car2Translation[0] -= 0.025;
-      car3Translation[0] += 0.02;
+      car2Translation[0] -= 2.5 * deltaTime;
+      car3Translation[0] += 2 * deltaTime;
 
       if (car3Translation[0] > 17.6) {
-        car3Rotation[2] += degToRad(-0.2);
+        car3Rotation[2] += degToRad(-20) * deltaTime;
         if (car3Translation[0] > 22) {
-          car3Translation[1] -= 0.03;
+          car3Translation[1] -= 3 * deltaTime;
         }
       }
 
       if (car2Translation[0] < -18) {
-        car2Rotation[2] += degToRad(-0.2);
+        car2Rotation[2] += degToRad(-20) * deltaTime;
         if (car2Translation[0] < -22) {	
-          car2Translation[1] -= 0.03;
+          car2Translation[1] -= 3 * deltaTime;
         }
       }
     }
@@ -175,7 +175,7 @@ async function main() {
     gl.enable(gl.DEPTH_TEST);
 
     now *= 0.001;  // convert to seconds
-    const deltaTime = now - then;
+    var deltaTime = now - then;
     then = now;
 
     // first draw from the POV of the light
@@ -203,7 +203,7 @@ async function main() {
     gl.viewport(0, 0, depthTextureSize, depthTextureSize);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    drawScene(lightProjectionMatrix, lightWorldMatrix, m4.identity(), lightWorldMatrix, colorProgramInfo);
+    drawScene(lightProjectionMatrix, lightWorldMatrix, m4.identity(), lightWorldMatrix, colorProgramInfo, deltaTime);
 
     // now draw scene to the canvas projecting the depth texture into the scene
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -230,7 +230,7 @@ async function main() {
     const up = [0, 1, 0];
     const cameraMatrix = m4.lookAt(cameraPosition, target, up);
 
-    drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, textureProgramInfo);
+    drawScene(projectionMatrix, cameraMatrix, textureMatrix, lightWorldMatrix, textureProgramInfo, deltaTime);
 
     // // ------ Draw the frustum ------
     // {

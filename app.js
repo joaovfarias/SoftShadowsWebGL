@@ -157,8 +157,9 @@ async function main() {
           car3Translation[1] -= 3 * deltaTime;
         }
       }
-
+      
       if (car2Translation[0] < -18) {
+        falling = true;
         car2Rotation[2] += degToRad(-20) * deltaTime;
         if (car2Translation[0] < -22) {	
           car2Translation[1] -= 3 * deltaTime;
@@ -254,32 +255,12 @@ async function main() {
     // }
     
     if (moveLight){
-      if (currentSceneIndex == 0) {
         const amplitude = (20 - (-40)) / 2; // Half the distance between min and max
         const offset = (20 + (-40)) / 2;   // Midpoint of min and max
         settings.posZ = amplitude * Math.sin(time) + offset;
     
         // Increment the time variable to animate the wave
         time += frequency * deltaTime;
-      }
-
-      if (currentSceneIndex == 1){
-        const amplitude = (30 - (-30)) / 2; // Half the distance between min and max
-        const offset = (30 + (-30)) / 2;   // Midpoint of min and max
-        settings.posZ = amplitude * Math.sin(time) + offset;
-    
-        // Increment the time variable to animate the wave
-        time += frequency * deltaTime;
-      }
-
-      if (currentSceneIndex == 2){
-        const amplitude = (15 - (-8)) / 2; // Half the distance between min and max
-        const offset = (15 + (-8)) / 2;   // Midpoint of min and max
-        settings.posZ = amplitude * Math.sin(time) + offset;
-    
-        // Increment the time variable to animate the wave
-        time += frequency * deltaTime;
-      }
     }
 
     requestAnimationFrame(render);

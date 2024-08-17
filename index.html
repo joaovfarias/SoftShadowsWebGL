@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+    <title>Soft Shadows Showcase</title>
+
     <style>
         /* Style the canvas to be a part of the layout */
         #canvasContainer {
             position: relative;
             width: 100%;
             height: 100vh;
+            display: flex; /* Use flexbox for layout */
         }
-
-        /* Full-size canvas */
-        #canvas {
-            width: 100%;
-            height: 100%;
-            display: block; /* Removes the small space below the canvas */
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
         }
-
         /* Style for the sliders positioned over the canvas */
         #controls {
             position: absolute;
@@ -71,12 +71,12 @@
 <body>
     <div id="canvasContainer">
         <canvas id="canvas"></canvas>
-
         <div id="controls">
-            <button id="changeSceneButton">Change Scene</button>
+            <button id="changeSceneButton">Change View</button>
             <button id="moveLightButton">Move Light</button>
             <button id="moveCarsButton">Move Cars</button>
             <button id="toggleShadowsButton">Toggle Shadows</button>
+            <button id="resetButton">Reset</button>
         </div>
     </div>
 
